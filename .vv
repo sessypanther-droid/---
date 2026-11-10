@@ -1,0 +1,74 @@
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
+import { unwrapMessage } from '../utils/message.js';
+import { config } from '../config.js';
+
+export default {
+  name: 'vv',
+  aliases: ['view', 'saveview'],
+  category: 'owner',
+  description: 'View-once media එකක් owner inbox එකට යවන්න (view-once message එකකට reply කරන්න)',
+  usage: '(view-once media එකකට reply)',
+  ownerOnly: true,
+  async run({ sock, m, reply, bare }) {
+    // 1) quoted (reply කරපු) message එක ගන්නවා
+    const ctx = m.message?.extendedTextMessage?.contextInfo;
+    const quoted = ctx?.quotedMessage;
+    if (!quoted) {
+      return reply({ text: 'View-once photo/video එකකට reply කරලා .vv දෙන්න.' });
+    }
+
+    // 2) view-once wrapper එක ඇතුළෙන් තියෙන ඇත්ත message එක ගන්නවා
+    const inner = unwrapMessage(quoted);
+    if (!inner) return reply({ text: 'Quoted message එක read කරන්න බැරි වුණා.' });
+
+    const mediaMsg = inner.imageMessage || inner.videoMessage;
+    if (!mediaMsg) {
+      return reply({ text: 'මේක photo/video එකක් නෙමෙයි. View-once image හෝ video එකකට reply කරන්න.' });
+    }
+
+    // 3) media එක download කරන්නවා
+    await reply({ text: '⏳ Downloading...' });
+
+    try {
+      const isVideo = !!inner.videoMessage;
+      const buffer = await downloadMediaMessage(
+        { message: inner },          // ඇතුළේ තියෙන actual media message එක
+        'buffer',
+        {},
+        {
+          logger: sock.logger,
+          reuploadRequest: sock.updateMediaMessage,
+        },
+      );
+
+      if (!buffer || buffer.length === 0) {
+        return reply({ text: '❌ Media download එක අසාර්ථක වුණා.' });
+      }
+
+      // 4) owner(s) ලාගේ inbox වලට යවන්නවා
+      const sentTo = [];
+      for (const owner of config.owners) {
+        const ownerJid = owner.includes('@') ? owner : `${owner}@s.whatsapp.net`;
+        await sock.sendMessage(
+          ownerJid,
+          isVideo
+            ? { video: buffer, caption: buildCaption(m, mediaMsg) }
+            : { image: buffer, caption: buildCaption(m, mediaMsg) },
+        );
+        sentTo.push(bare(ownerJid));
+      }
+
+      await reply({ text: `✅ Saved → ${sentTo.join(', ')} (${(buffer.length / 1024).toFixed(1)} KB)` });
+    } catch (err) {
+      console.error('[vv]', err);
+      await reply({ text: `❌ Error: ${err.message}` });
+    }
+  },
+};
+
+function buildCaption(m, mediaMsg) {
+  const from = m.key.remoteJid ?? '';
+  const sender = m.key.participant ?? from;
+  const caption = mediaMsg.caption ? `\n\n📝 Caption: ${mediaMsg.caption}` : '';
+  return `👁️ View-once saved by Vishi-MD Mini\nFrom: @${sender.split('@')[0]}${caption}`;
+}
