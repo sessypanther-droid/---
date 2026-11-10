@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import makeWASocket, {
   useMultiFileAuthState, fetchLatestBaileysVersion, Browsers, delay,
 } from '@whiskeysockets/baileys';
@@ -12,7 +14,7 @@ if (PHONE.startsWith('0')) {
   console.error('❌ Leading 0 තියෙනවා. 0771234567 නෙමෙයි → 94771234567');
   process.exit(1);
 }
-console.log('pairing number:', PHONE);
+console.log('pairing number ending:', PHONE.slice(-4));
 
 const { state, saveCreds } = await useMultiFileAuthState('./auth');
 const { version } = await fetchLatestBaileysVersion();
@@ -21,7 +23,7 @@ console.log('WA version:', version);
 const sock = makeWASocket({
   version,
   auth: state,
-  logger: pino({ level: 'debug' }),   // debug = හැම error එකක්ම පේනවා
+  logger: pino({ level: 'error' }),
   printQRInTerminal: false,
   browser: Browsers.ubuntu('Chrome'),
   markOnlineOnConnect: false,

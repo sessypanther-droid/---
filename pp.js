@@ -1,5 +1,3 @@
-import { config } from '../config.js';
-
 const SITE = 'https://pastpapers.wiki';
 const UA = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' };
 
@@ -53,7 +51,7 @@ export default {
   category: 'education',
   description: 'Sri Lanka past papers download (A/L, O/L, term test)',
   usage: '<subject + year>  උදා: .pp ol maths 2022 sinhala',
-  async run({ sock, jid, args, reply, react }) {
+  async run({ sock, m, jid, args, reply, react }) {
     const query = buildQuery(args);
     if (!query) {
       return reply({
