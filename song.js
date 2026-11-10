@@ -1,5 +1,5 @@
 import ytdl from 'ytdl-core';
-import { config } from '../config.js';
+import { config } from './config.js';
 
 const YOUTUBE_REGEX = /(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([\w-]{11})/;
 
@@ -9,7 +9,7 @@ export default {
   category: 'downloader',
   description: 'YouTube සිංදුවක්/link එකක් audio එකක් විදිහට download කරන්න',
   usage: '<song name | youtube link>',
-  async run({ sock, jid, args, reply, react }) {
+  async run({ sock, m, jid, args, reply, react }) {
     const query = args.join(' ').trim();
     if (!query) return reply({ text: '🎵 සිංදු නමක් හෝ YouTube link එකක් දෙන්න.\nඋදා: .song manike mage hiyoum' });
 
